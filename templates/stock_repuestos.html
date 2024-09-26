@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Stock de Repuestos</h2>
+<ul>
+    {% for repuesto in repuestos %}
+        <li>{{ repuesto[0] }} - Stock: {{ repuesto[1] }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

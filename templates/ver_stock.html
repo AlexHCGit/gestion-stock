@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Ver Stock por Máquina</h2>
+<form method="POST">
+    <label for="maquina_id">Seleccione Máquina:</label>
+    <select name="maquina_id" id="maquina_id">
+        {% for maquina in maquinas %}
+        <option value="{{ maquina[0] }}">{{ maquina[1] }}</option>
+        {% endfor %}
+    </select><br>
+    <button type="submit">Ver Stock</button>
+</form>
+{% endblock %}

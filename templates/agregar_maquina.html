@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Agregar Máquina</h2>
+<form method="POST">
+    <label for="nombre_maquina">Nombre de la Máquina:</label>
+    <input type="text" id="nombre_maquina" name="nombre_maquina" required><br>
+    
+    <label for="hospital_id">Seleccione Hospital:</label>
+    <select name="hospital_id" id="hospital_id">
+        {% for hospital in hospitales %}
+        <option value="{{ hospital[0] }}">{{ hospital[1] }}</option>
+        {% endfor %}
+    </select><br>
+
+    <button type="submit">Guardar</button>
+</form>
+{% endblock %}

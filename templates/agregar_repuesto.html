@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Agregar Repuesto</h2>
+<form method="POST">
+    <label for="nombre_repuesto">Nombre del Repuesto:</label>
+    <input type="text" id="nombre_repuesto" name="nombre_repuesto" required><br>
+
+    <label for="descripcion">Descripción:</label>
+    <input type="text" id="descripcion" name="descripcion" required><br>
+
+    <label for="stock_inicial">Stock Inicial:</label>
+    <input type="number" id="stock_inicial" name="stock_inicial" required><br>
+
+    <label for="maquina_id">Seleccione Máquina:</label>
+    <select name="maquina_id" id="maquina_id">
+        {% for maquina in maquinas %}
+        <option value="{{ maquina[0] }}">{{ maquina[1] }}</option>
+        {% endfor %}
+    </select><br>
+
+    <button type="submit">Agregar Repuesto</button>
+</form>
+{% endblock %}

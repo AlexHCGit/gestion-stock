@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Resultados de la Búsqueda</h2>
+<ul>
+    {% if resultados %}
+        {% for resultado in resultados %}
+        <li>
+            Repuesto: {{ resultado[0] }}, Máquina: {{ resultado[1] }}, Hospital: {{ resultado[2] }},
+            Stock Disponible: {{ resultado[3] }}, Descripción: {{ resultado[4] }}
+        </li>
+        {% endfor %}
+    {% else %}
+        <p>No se encontró el repuesto.</p>
+    {% endif %}
+</ul>
+{% endblock %}

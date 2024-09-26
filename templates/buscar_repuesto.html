@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Buscar Repuesto</h2>
+<form method="POST">
+    <label for="nombre_repuesto">Nombre del Repuesto:</label>
+    <input type="text" id="nombre_repuesto" name="nombre_repuesto"> required<br>
+    <button type="submit">Buscar</button>
+</form>
+{% endblock %}

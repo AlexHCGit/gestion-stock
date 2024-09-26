@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Máquinas del Hospital</h2>
+<ul>
+    {% for maquina in maquinas %}
+        <li>{{ maquina[0] }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

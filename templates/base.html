@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Stock</title>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Inicio</a></li>
+            <li><a href="{{ url_for('agregar_hospital') }}">Agregar Hospital</a></li>
+            <li><a href="{{ url_for('ver_hospitales') }}">Ver Hospitales</a></li>
+            <li><a href="{{ url_for('agregar_maquina') }}">Agregar Máquina</a></li>
+            <li><a href="{{ url_for('ver_maquinas') }}"> Ver Máquinas por Hospital</a></li>
+            <li><a href="{{ url_for('agregar_repuesto') }}">Agregar Repuesto</a></li>
+            <li><a href="{{ url_for('registrar_entrada') }}"> Registrar Entrada Repuesto</a></li>
+            <li><a href="{{ url_for('registrar_salida') }}"> Registrar Salida Repuesto</a></li>
+            <li><a href="{{ url_for('ver_stock') }}">Ver Stock</a></li>
+            <li><a href="{{ url_for('buscar_repuesto') }}">Buscar Repuesto</a></li>
+        </ul>
+    </nav>
+    <section>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </section>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Lista de Hospitales</h2>
+<ul>
+    {% for hospital in hospitales %}
+        <li>{{ hospital[0] }} - {{ hospital[1] }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

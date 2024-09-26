@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Seleccione Hospital</h2>
+<ul>
+    {% for hospital in hospitales %}
+        <li><a href="{{ url_for('ver_maquinas_por_hospital', hospital_id=hospital[0]) }}">{{ hospital[1] }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}
