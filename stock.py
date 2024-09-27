@@ -1,0 +1,261 @@
+import sqlite3
+import streamlit as st
+
+# Conectar a la base de datos SQLite
+def conectar_db():
+    return sqlite3.connect('inventario.db')
+
+# Crear tablas si no existen
+def crear_tablas():
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS hospital (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            ubicacion TEXT
+        );
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS maquina (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            hospital_id INTEGER,
+            FOREIGN KEY(hospital_id) REFERENCES hospital(id)
+        );
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS repuesto (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            descripcion TEXT,
+            stock INTEGER DEFAULT 0,
+            maquina_id INTEGER,
+            FOREIGN KEY(maquina_id) REFERENCES maquina(id)
+        );
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS movimiento_stock (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            repuesto_id INTEGER,
+            cantidad INTEGER,
+            tipo TEXT,
+            fecha TEXT,
+            FOREIGN KEY(repuesto_id) REFERENCES repuesto(id)
+        );
+    ''')
+
+    conexion.commit()
+    conexion.close()
+
+# Función para agregar un hospital
+def agregar_hospital(nombre, ubicacion):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('INSERT INTO hospital (nombre, ubicacion) VALUES (?, ?)', (nombre, ubicacion))
+    conexion.commit()
+    conexion.close()
+
+# Función para agregar una máquina a un hospital
+def agregar_maquina(nombre, hospital_id):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('INSERT INTO maquina (nombre, hospital_id) VALUES (?, ?)', (nombre, hospital_id))
+    conexion.commit()
+    conexion.close()
+
+# Función para registrar una entrada de stock
+def registrar_entrada(repuesto_id, cantidad):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('UPDATE repuesto SET stock = stock + ? WHERE id = ?', (cantidad, repuesto_id))
+    cursor.execute('INSERT INTO movimiento_stock (repuesto_id, cantidad, tipo, fecha) VALUES (?, ?, "entrada", date("now"))', 
+                   (repuesto_id, cantidad))
+    conexion.commit()
+    conexion.close()
+
+# Función para registrar una salida de stock
+def registrar_salida(repuesto_id, cantidad):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('UPDATE repuesto SET stock = stock - ? WHERE id = ?', (cantidad, repuesto_id))
+    cursor.execute('INSERT INTO movimiento_stock (repuesto_id, cantidad, tipo, fecha) VALUES (?, ?, "salida", date("now"))', 
+                   (repuesto_id, cantidad))
+    conexion.commit()
+    conexion.close()
+
+# Función para mostrar el stock actual según hospital y máquina
+def ver_stock(hospital_id=None, maquina_id=None):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    
+    query = '''
+        SELECT repuesto.nombre, repuesto.descripcion, repuesto.stock, maquina.nombre, hospital.nombre
+        FROM repuesto
+        JOIN maquina ON repuesto.maquina_id = maquina.id
+        JOIN hospital ON maquina.hospital_id = hospital.id
+    '''
+    
+    params = []
+    
+    if hospital_id and maquina_id:
+        query += ' WHERE hospital.id = ? AND maquina.id = ?'
+        params = [hospital_id, maquina_id]
+    elif hospital_id:
+        query += ' WHERE hospital.id = ?'
+        params = [hospital_id]
+
+    cursor.execute(query, params)
+    repuestos = cursor.fetchall()
+    conexion.close()
+    return repuestos
+
+# Función para buscar un repuesto por nombre y mostrar dónde está
+def buscar_repuesto(nombre_repuesto):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('''
+        SELECT repuesto.nombre, repuesto.descripcion, repuesto.stock, maquina.nombre, hospital.nombre
+        FROM repuesto
+        JOIN maquina ON repuesto.maquina_id = maquina.id
+        JOIN hospital ON maquina.hospital_id = hospital.id
+        WHERE repuesto.nombre LIKE ?
+    ''', ('%' + nombre_repuesto + '%',))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+# Función para obtener la lista de hospitales
+def obtener_hospitales():
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('SELECT id, nombre, ubicacion FROM hospital')
+    hospitales = cursor.fetchall()
+    conexion.close()
+    return hospitales
+
+# Función para obtener las máquinas de un hospital
+def obtener_maquinas(hospital_id):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    cursor.execute('SELECT id, nombre FROM maquina WHERE hospital_id = ?', (hospital_id,))
+    maquinas = cursor.fetchall()
+    conexion.close()
+    return maquinas
+
+# Función para obtener los repuestos
+def obtener_repuestos(maquina_id=None):
+    conexion = conectar_db()
+    cursor = conexion.cursor()
+    
+    if maquina_id:
+        cursor.execute('SELECT id, nombre FROM repuesto WHERE maquina_id = ?', (maquina_id,))
+    else:
+        cursor.execute('SELECT id, nombre FROM repuesto')
+    
+    repuestos = cursor.fetchall()
+    conexion.close()
+    return repuestos
+
+# Interfaz con Streamlit
+def interfaz_principal():
+    st.title("Gestión de Stock de Repuestos en Hospitales")
+
+    # Pestañas para las diferentes funcionalidades
+    opcion = st.sidebar.selectbox("Selecciona una opción", ["Ver Stock", "Registrar Entrada", "Registrar Salida", 
+                                                            "Agregar Hospital", "Ver Hospitales", 
+                                                            "Agregar Máquina", "Ver Máquinas por Hospital", "Buscar Repuesto"])
+
+    if opcion == "Ver Stock":
+        st.header("Stock por Hospital y Máquina")
+        hospitales = obtener_hospitales()
+        hospital_id = st.selectbox("Selecciona un Hospital", [h[0] for h in hospitales], format_func=lambda x: dict((h[0], f"{h[1]} - {h[2]}") for h in hospitales)[x])
+        maquinas = obtener_maquinas(hospital_id)
+        maquina_id = st.selectbox("Selecciona una Máquina", [m[0] for m in maquinas], format_func=lambda x: dict(maquinas)[x])
+        
+        repuestos = ver_stock(hospital_id, maquina_id)
+        for repuesto in repuestos:
+            st.write(f"Repuesto: {repuesto[0]} | Descripción: {repuesto[1]} | Stock: {repuesto[2]}")
+
+    elif opcion == "Registrar Entrada":
+        st.header("Registrar Entrada de Stock")
+        hospitales = obtener_hospitales()
+        hospital_id = st.selectbox("Selecciona un Hospital", [h[0] for h in hospitales], format_func=lambda x: dict((h[0], f"{h[1]} - {h[2]}") for h in hospitales)[x])
+        maquinas = obtener_maquinas(hospital_id)
+        maquina_id = st.selectbox("Selecciona una Máquina", [m[0] for m in maquinas], format_func=lambda x: dict(maquinas)[x])
+        
+        repuestos = obtener_repuestos(maquina_id)
+        repuesto_nombre = st.selectbox("Selecciona un Repuesto", [r[1] for r in repuestos])
+        repuesto_id = dict((r[1], r[0]) for r in repuestos)[repuesto_nombre]
+        
+        cantidad = st.number_input("Cantidad a Ingresar", min_value=1)
+        if st.button("Registrar Entrada"):
+            registrar_entrada(repuesto_id, cantidad)
+            st.success("Entrada de stock registrada exitosamente")
+
+    elif opcion == "Registrar Salida":
+        st.header("Registrar Salida de Stock")
+        hospitales = obtener_hospitales()
+        hospital_id = st.selectbox("Selecciona un Hospital", [h[0] for h in hospitales], format_func=lambda x: dict((h[0], f"{h[1]} - {h[2]}") for h in hospitales)[x])
+        maquinas = obtener_maquinas(hospital_id)
+        maquina_id = st.selectbox("Selecciona una Máquina", [m[0] for m in maquinas], format_func=lambda x: dict(maquinas)[x])
+        
+        repuestos = obtener_repuestos(maquina_id)
+        repuesto_nombre = st.selectbox("Selecciona un Repuesto", [r[1] for r in repuestos])
+        repuesto_id = dict((r[1], r[0]) for r in repuestos)[repuesto_nombre]
+        
+        cantidad = st.number_input("Cantidad a Sacar", min_value=1)
+        if st.button("Registrar Salida"):
+            registrar_salida(repuesto_id, cantidad)
+            st.success("Salida de stock registrada exitosamente")
+
+    elif opcion == "Agregar Hospital":
+        st.header("Agregar Hospital")
+        nombre = st.text_input("Nombre del Hospital")
+        ubicacion = st.text_input("Ubicación del Hospital")
+        if st.button("Agregar Hospital"):
+            agregar_hospital(nombre, ubicacion)
+            st.success("Hospital agregado exitosamente")
+
+    elif opcion == "Ver Hospitales":
+        st.header("Lista de Hospitales")
+        hospitales = obtener_hospitales()
+        for hospital in hospitales:
+            st.write(f"Nombre: {hospital[1]} | Ubicación: {hospital[2]}")
+
+    elif opcion == "Agregar Máquina":
+        st.header("Agregar Máquina")
+        hospitales = obtener_hospitales()
+        hospital_id = st.selectbox("Selecciona un Hospital", [h[0] for h in hospitales], format_func=lambda x: dict((h[0], f"{h[1]} - {h[2]}") for h in hospitales)[x])
+        nombre = st.text_input("Nombre de la Máquina")
+        if st.button("Agregar Máquina"):
+            agregar_maquina(nombre, hospital_id)
+            st.success("Máquina agregada exitosamente")
+
+    elif opcion == "Ver Máquinas por Hospital":
+        st.header("Ver Máquinas por Hospital")
+        hospitales = obtener_hospitales()
+        hospital_id = st.selectbox("Selecciona un Hospital", [h[0] for h in hospitales], format_func=lambda x: dict((h[0], f"{h[1]} - {h[2]}") for h in hospitales)[x])
+        maquinas = obtener_maquinas(hospital_id)
+        for maquina in maquinas:
+            st.write(f"Máquina: {maquina[1]}")
+
+    elif opcion == "Buscar Repuesto":
+        st.header("Buscar Repuesto")
+        nombre_repuesto = st.text_input("Nombre del Repuesto")
+        if st.button("Buscar"):
+            resultados = buscar_repuesto(nombre_repuesto)
+            if resultados:
+                for resultado in resultados:
+                    st.write(f"Repuesto: {resultado[0]} | Descripción: {resultado[1]} | Stock: {resultado[2]} | Máquina: {resultado[3]} | Hospital: {resultado[4]}")
+            else:
+                st.warning("No se encontró el repuesto.")
+
+# Ejecutar la aplicación
+if __name__ == "__main__":
+    crear_tablas()  # Crear las tablas la primera vez que se ejecuta
+    interfaz_principal()
